@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, message, Table, Button, Card, Space, Typography, Spin, Image, Modal } from 'antd';
+import { Upload, message, Table, Button, Card, Space, Typography, Spin, Image, Modal, List } from 'antd';
 import {
   InboxOutlined,
   DeleteOutlined,
@@ -13,6 +13,7 @@ import {
   FileWordOutlined,
   FileZipOutlined,
   FileUnknownOutlined,
+  PlayCircleOutlined,
   EyeOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
@@ -26,7 +27,17 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const fetchFiles = async () => {
     try {
       setLoading(true);
@@ -142,8 +153,8 @@ function App() {
 
   const getFileTypeIcon = (fileType) => {
     const iconStyle = {
-      width: '40px',
-      height: '40px',
+      width: isMobile ? '32px' : '40px',
+      height: isMobile ? '32px' : '40px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -155,7 +166,7 @@ function App() {
     if (fileType.startsWith('image/')) {
       return (
         <div style={iconStyle}>
-          <PictureOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+          <PictureOutlined style={{ fontSize: isMobile ? '18px' : '24px', color: '#1890ff' }} />
         </div>
       );
     }
@@ -163,7 +174,7 @@ function App() {
     if (fileType.startsWith('video/')) {
       return (
         <div style={iconStyle}>
-          <VideoCameraOutlined style={{ fontSize: '24px', color: '#ff4d4f' }} />
+          <VideoCameraOutlined style={{ fontSize: isMobile ? '18px' : '24px', color: '#ff4d4f' }} />
         </div>
       );
     }
@@ -171,7 +182,7 @@ function App() {
     if (fileType.startsWith('audio/')) {
       return (
         <div style={iconStyle}>
-          <AudioOutlined style={{ fontSize: '24px', color: '#722ed1' }} />
+          <AudioOutlined style={{ fontSize: isMobile ? '18px' : '24px', color: '#722ed1' }} />
         </div>
       );
     }
@@ -179,7 +190,7 @@ function App() {
     if (fileType.includes('spreadsheet') || fileType.includes('excel')) {
       return (
         <div style={iconStyle}>
-          <FileExcelOutlined style={{ fontSize: '24px', color: '#52c41a' }} />
+          <FileExcelOutlined style={{ fontSize: isMobile ? '18px' : '24px', color: '#52c41a' }} />
         </div>
       );
     }
@@ -187,7 +198,7 @@ function App() {
     if (fileType.includes('pdf')) {
       return (
         <div style={iconStyle}>
-          <FilePdfOutlined style={{ fontSize: '24px', color: '#fa541c' }} />
+          <FilePdfOutlined style={{ fontSize: isMobile ? '18px' : '24px', color: '#fa541c' }} />
         </div>
       );
     }
@@ -195,7 +206,7 @@ function App() {
     if (fileType.includes('word') || fileType.includes('document')) {
       return (
         <div style={iconStyle}>
-          <FileWordOutlined style={{ fontSize: '24px', color: '#2f54eb' }} />
+          <FileWordOutlined style={{ fontSize: isMobile ? '18px' : '24px', color: '#2f54eb' }} />
         </div>
       );
     }
@@ -203,7 +214,7 @@ function App() {
     if (fileType.includes('zip') || fileType.includes('compressed')) {
       return (
         <div style={iconStyle}>
-          <FileZipOutlined style={{ fontSize: '24px', color: '#faad14' }} />
+          <FileZipOutlined style={{ fontSize: isMobile ? '18px' : '24px', color: '#faad14' }} />
         </div>
       );
     }
@@ -211,14 +222,14 @@ function App() {
     if (fileType.includes('text/')) {
       return (
         <div style={iconStyle}>
-          <FileTextOutlined style={{ fontSize: '24px', color: '#13c2c2' }} />
+          <FileTextOutlined style={{ fontSize: isMobile ? '18px' : '24px', color: '#13c2c2' }} />
         </div>
       );
     }
 
     return (
       <div style={iconStyle}>
-        <FileUnknownOutlined style={{ fontSize: '24px', color: '#8c8c8c' }} />
+        <FileUnknownOutlined style={{ fontSize: isMobile ? '18px' : '24px', color: '#8c8c8c' }} />
       </div>
     );
   };
@@ -265,7 +276,7 @@ function App() {
     {
       title: 'Type',
       key: 'type',
-      width: 80,
+      width: isMobile ? 60 : 80,
       align: 'center',
       render: (_, record) => getFileTypeIcon(record.fileType),
     },
@@ -289,26 +300,29 @@ function App() {
       title: 'Size',
       key: 'size',
       width: 120,
+      responsive: ['md'],
       render: (_, record) => formatFileSize(record.size),
     },
     {
       title: 'Uploaded',
       key: 'createdAt',
       width: 150,
+      responsive: ['lg'],
       render: (_, record) => new Date(record.createdAt).toLocaleDateString(),
     },
     {
       title: 'Actions',
       key: 'actions',
-      width: 120,
+      width: isMobile ? 100 : 120,
       align: 'center',
       render: (_, record) => (
-        <Space>
+        <Space size="small">
           <Button
             type="primary"
             icon={<DownloadOutlined />}
             onClick={() => handleDownload(record.fileUrl, record.originalName)}
             className="hover:scale-105 transition-transform"
+            size={isMobile ? "small" : "middle"}
           />
           <Button
             type="primary"
@@ -316,24 +330,74 @@ function App() {
             icon={<DeleteOutlined />}
             onClick={() => handleDelete(record._id)}
             className="hover:scale-105 transition-transform"
+            size={isMobile ? "small" : "middle"}
           />
         </Space>
       ),
     },
   ];
 
+  const renderMobileList = () => (
+    <List
+      dataSource={fileList}
+      renderItem={(file) => (
+        <List.Item
+          className="p-4 hover:bg-gray-50"
+        >
+          <div className="flex items-center w-full">
+            <div className="mr-3">
+              {getFileTypeIcon(file.fileType)}
+            </div>
+            <div className="flex-grow min-w-0">
+              <div className="flex items-center space-x-2">
+                <span className="font-medium truncate">{file.originalName}</span>
+                <Button
+                  type="text"
+                  icon={<EyeOutlined />}
+                  onClick={() => handlePreview(file)}
+                  className="hover:text-blue-500"
+                  size="small"
+                />
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                {formatFileSize(file.size)} • {new Date(file.createdAt).toLocaleDateString()}
+              </div>
+            </div>
+            <Space size="small" className="ml-2">
+              <Button
+                type="primary"
+                icon={<DownloadOutlined />}
+                onClick={() => handleDownload(file.fileUrl, file.originalName)}
+                className="hover:scale-105 transition-transform"
+                size="small"
+              />
+              <Button
+                type="primary"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => handleDelete(file._id)}
+                className="hover:scale-105 transition-transform"
+                size="small"
+              />
+            </Space>
+          </div>
+        </List.Item>
+      )}
+    />
+  );
+
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-8">
       <div className="max-w-6xl mx-auto">
-        <Title level={2} className="text-center mb-8">S3Drive</Title>
+        <Title level={2} className="text-center mb-4 sm:mb-8">S3Drive</Title>
         
-        <Card className="mb-8 shadow-md">
+        <Card className="mb-4 sm:mb-8 shadow-md">
           <Dragger {...uploadProps}>
             <p className="ant-upload-drag-icon">
-              <InboxOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
+              <InboxOutlined style={{ fontSize: isMobile ? '36px' : '48px', color: '#1890ff' }} />
             </p>
-            <p className="ant-upload-text text-lg">Click or drag files to upload</p>
-            <p className="ant-upload-hint text-gray-500">
+            <p className="ant-upload-text text-base sm:text-lg">Click or drag files to upload</p>
+            <p className="ant-upload-hint text-gray-500 text-sm">
               Support for single or bulk upload
             </p>
           </Dragger>
@@ -341,13 +405,16 @@ function App() {
 
         <Card className="shadow-md">
           <Spin spinning={loading} tip="Loading files...">
-            <Table
-              columns={columns}
-              dataSource={fileList}
-              rowKey="_id"
-              pagination={{ pageSize: 10 }}
-              className="file-table"
-            />
+            {isMobile ? renderMobileList() : (
+              <Table
+                columns={columns}
+                dataSource={fileList}
+                rowKey="_id"
+                pagination={{ pageSize: 10 }}
+                className="file-table"
+                scroll={{ x: true }}
+              />
+            )}
           </Spin>
         </Card>
 
@@ -356,8 +423,9 @@ function App() {
           title={previewFile?.originalName}
           footer={null}
           onCancel={() => setPreviewVisible(false)}
-          width={800}
-          centered
+          width={isMobile ? '100%' : 800}
+          style={{ top: isMobile ? 0 : 100 }}
+          className={isMobile ? 'full-screen-modal' : ''}
         >
           {renderPreviewContent(previewFile)}
         </Modal>

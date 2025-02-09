@@ -20,3 +20,34 @@
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .full-screen-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin: 0;
+    top: 0;
+    padding-bottom: 0;
+  }
+
+  .full-screen-modal .ant-modal-content {
+    min-height: 100vh;
+    border-radius: 0;
+  }
+
+  .ant-upload-drag {
+    padding: 16px !important;
+  }
+
+  .ant-card-body {
+    padding: 12px !important;
+  }
+}
+
+/* Responsive table adjustments */
+@media (max-width: 576px) {
+  .ant-table {
+    font-size: 14px;
+  }
+}
