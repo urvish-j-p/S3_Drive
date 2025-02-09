@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, message, Table, Button, Card, Space, Typography } from 'antd';
+import { Upload, message, Table, Button, Card, Space, Typography, Spin, Image, Modal } from 'antd';
 import {
   InboxOutlined,
   DeleteOutlined,
@@ -12,7 +12,8 @@ import {
   FilePdfOutlined,
   FileWordOutlined,
   FileZipOutlined,
-  FileUnknownOutlined
+  FileUnknownOutlined,
+  EyeOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 
@@ -22,13 +23,19 @@ const { Title } = Typography;
 function App() {
   const [fileList, setFileList] = useState([]);
   const [uploadList, setUploadList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewFile, setPreviewFile] = useState(null);
   
   const fetchFiles = async () => {
     try {
+      setLoading(true);
       const response = await axios.get('http://localhost:5000/api/files');
       setFileList(response.data);
     } catch (error) {
       message.error('Failed to fetch files');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -45,12 +52,10 @@ function App() {
       const { status } = info.file;
       const newFileList = [...info.fileList];
       
-      // Limit the number of files shown in upload list
       setUploadList(newFileList.slice(-5));
       
       if (status === 'done') {
         message.success(`${info.file.name} file uploaded successfully.`);
-        // Clear the upload list when file is done
         setUploadList(prev => prev.filter(file => file.uid !== info.file.uid));
         fetchFiles();
       } else if (status === 'error') {
@@ -73,8 +78,149 @@ function App() {
   };
 
   const handleDownload = (fileUrl, fileName) => {
-    // Open in new tab for preview/download
     window.open(fileUrl, '_blank');
+  };
+
+  const handlePreview = (file) => {
+    setPreviewFile(file);
+    setPreviewVisible(true);
+  };
+
+  const renderPreviewContent = (file) => {
+    if (!file) return null;
+
+    if (file.fileType.startsWith('image/')) {
+      return <Image src={file.fileUrl} style={{ width: '100%' }} />;
+    }
+
+    if (file.fileType.startsWith('video/')) {
+      return (
+        <video controls style={{ width: '100%' }}>
+          <source src={file.fileUrl} type={file.fileType} />
+          Your browser does not support the video tag.
+        </video>
+      );
+    }
+
+    if (file.fileType.startsWith('audio/')) {
+      return (
+        <audio controls style={{ width: '100%' }}>
+          <source src={file.fileUrl} type={file.fileType} />
+          Your browser does not support the audio tag.
+        </audio>
+      );
+    }
+
+    if (file.fileType === 'application/pdf') {
+      return (
+        <iframe
+          src={file.fileUrl}
+          style={{ width: '100%', height: '80vh' }}
+          title="PDF Preview"
+        />
+      );
+    }
+
+    return (
+      <div className="text-center p-8">
+        {getFileIcon(file.fileType)}
+        <h3 className="mt-4 text-lg font-semibold">{file.originalName}</h3>
+        <p className="text-gray-500 mt-2">
+          {formatFileSize(file.size)} • {file.fileType}
+        </p>
+        <Button
+          type="primary"
+          icon={<DownloadOutlined />}
+          onClick={() => handleDownload(file.fileUrl, file.originalName)}
+          className="mt-4"
+        >
+          Download
+        </Button>
+      </div>
+    );
+  };
+
+  const getFileTypeIcon = (fileType) => {
+    const iconStyle = {
+      width: '40px',
+      height: '40px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: '#f0f2f5',
+      borderRadius: '4px',
+      border: '1px solid #d9d9d9'
+    };
+
+    if (fileType.startsWith('image/')) {
+      return (
+        <div style={iconStyle}>
+          <PictureOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+        </div>
+      );
+    }
+
+    if (fileType.startsWith('video/')) {
+      return (
+        <div style={iconStyle}>
+          <VideoCameraOutlined style={{ fontSize: '24px', color: '#ff4d4f' }} />
+        </div>
+      );
+    }
+
+    if (fileType.startsWith('audio/')) {
+      return (
+        <div style={iconStyle}>
+          <AudioOutlined style={{ fontSize: '24px', color: '#722ed1' }} />
+        </div>
+      );
+    }
+
+    if (fileType.includes('spreadsheet') || fileType.includes('excel')) {
+      return (
+        <div style={iconStyle}>
+          <FileExcelOutlined style={{ fontSize: '24px', color: '#52c41a' }} />
+        </div>
+      );
+    }
+
+    if (fileType.includes('pdf')) {
+      return (
+        <div style={iconStyle}>
+          <FilePdfOutlined style={{ fontSize: '24px', color: '#fa541c' }} />
+        </div>
+      );
+    }
+
+    if (fileType.includes('word') || fileType.includes('document')) {
+      return (
+        <div style={iconStyle}>
+          <FileWordOutlined style={{ fontSize: '24px', color: '#2f54eb' }} />
+        </div>
+      );
+    }
+
+    if (fileType.includes('zip') || fileType.includes('compressed')) {
+      return (
+        <div style={iconStyle}>
+          <FileZipOutlined style={{ fontSize: '24px', color: '#faad14' }} />
+        </div>
+      );
+    }
+
+    if (fileType.includes('text/')) {
+      return (
+        <div style={iconStyle}>
+          <FileTextOutlined style={{ fontSize: '24px', color: '#13c2c2' }} />
+        </div>
+      );
+    }
+
+    return (
+      <div style={iconStyle}>
+        <FileUnknownOutlined style={{ fontSize: '24px', color: '#8c8c8c' }} />
+      </div>
+    );
   };
 
   const getFileIcon = (fileType) => {
@@ -119,16 +265,24 @@ function App() {
     {
       title: 'Type',
       key: 'type',
-      width: 70,
+      width: 80,
       align: 'center',
-      render: (_, record) => getFileIcon(record.fileType),
+      render: (_, record) => getFileTypeIcon(record.fileType),
     },
     {
       title: 'File Name',
       dataIndex: 'originalName',
       key: 'originalName',
-      render: (text) => (
-        <span className="font-medium">{text}</span>
+      render: (text, record) => (
+        <div className="flex items-center space-x-2">
+          <span className="font-medium">{text}</span>
+          <Button
+            type="text"
+            icon={<EyeOutlined />}
+            onClick={() => handlePreview(record)}
+            className="hover:text-blue-500"
+          />
+        </div>
       ),
     },
     {
@@ -186,14 +340,27 @@ function App() {
         </Card>
 
         <Card className="shadow-md">
-          <Table
-            columns={columns}
-            dataSource={fileList}
-            rowKey="_id"
-            pagination={{ pageSize: 10 }}
-            className="file-table"
-          />
+          <Spin spinning={loading} tip="Loading files...">
+            <Table
+              columns={columns}
+              dataSource={fileList}
+              rowKey="_id"
+              pagination={{ pageSize: 10 }}
+              className="file-table"
+            />
+          </Spin>
         </Card>
+
+        <Modal
+          open={previewVisible}
+          title={previewFile?.originalName}
+          footer={null}
+          onCancel={() => setPreviewVisible(false)}
+          width={800}
+          centered
+        >
+          {renderPreviewContent(previewFile)}
+        </Modal>
       </div>
     </div>
   );
